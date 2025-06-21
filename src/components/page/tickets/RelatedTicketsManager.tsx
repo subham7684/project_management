@@ -1,7 +1,7 @@
 // --- file: src/components/ticketDetails/RelatedTicketsManager.tsx ---
 import { FC, useState } from 'react';
 import { Link2, Search, X, ChevronRight } from 'lucide-react';
-import { toast } from '../../../components/ui/use_toast';
+import { toast } from '../../ui/use-toast';
 import { Ticket } from '../../../types/interfaces';
 import ticketService from '../../../services/ticket';
 

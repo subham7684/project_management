@@ -13,7 +13,7 @@ import {
 } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { Plus, Search, Filter, RefreshCw } from 'lucide-react';
-import { toast } from '../../../components/ui/use_toast';
+import { toast } from '../../../components/ui/use-toast';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { useAppTheme } from '@/context/ThemeContext';

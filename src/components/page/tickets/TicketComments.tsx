@@ -7,7 +7,7 @@ import { Comment, Ticket } from '../../../types/interfaces';
 import { AppDispatch } from '../../../store/store';
 import commentService from '../../../services/comment';
 import websocketService from '../../../services/webSocket';
-import { toast } from '../../../components/ui/use_toast';
+import { toast } from '../../ui/use-toast';
 import debounce from 'lodash/debounce';
 import ReactMarkdown from 'react-markdown';
 import { useAppDispatch } from '@/lib/hooks/redux';

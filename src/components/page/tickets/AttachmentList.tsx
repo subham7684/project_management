@@ -1,7 +1,7 @@
 // --- file: src/components/ticketDetails/AttachmentList.tsx ---
 import { FC, useState } from 'react';
 import { Paperclip, X, Download, File, Image, FileText, FilePlus } from 'lucide-react';
-import { toast } from '../../../components/ui/use_toast';
+import { toast } from '../../ui/use-toast';
 import ticketService from '../../../services/ticket';
 
 interface Attachment {

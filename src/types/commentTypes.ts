@@ -1,6 +1,5 @@
-// types/interfaces.ts
+// src/types/interfaces.ts
 
-// ========== Base User Interface ==========
 export interface User {
   id: string;
   full_name?: string;
@@ -29,11 +28,11 @@ export interface CommentBase {
 }
 
 // Comment creation payload
-export type CommentCreate = CommentBase;
+export interface CommentCreate extends CommentBase {}
 
 // Comment update payload
 export interface CommentUpdate {
-  content?: string;
+  content: string;
 }
 
 // Full comment object (response from API)
@@ -46,7 +45,7 @@ export interface Comment extends CommentBase {
   edited_at?: string; // ISO date string
   mentions: string[]; // Array of user IDs mentioned
   reactions: Record<string, string[]>; // { "like": ["user1", "user2"], "heart": ["user3"] }
-  reaction_counts?: Record<string, number>; // { "like": 2, "heart": 1 }
+  reaction_counts: Record<string, number>; // Made required to match backend
 }
 
 // Comment with nested replies

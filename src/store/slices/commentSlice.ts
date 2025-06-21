@@ -1,11 +1,12 @@
+// src/store/slices/commentSlice.ts
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { Comment } from "../../types/interfaces";
 import CommentService from "../../services/comment";
 import { ChatRoom, CommentCreate, CommentUpdate } from "@/types/commentTypes";
+import type { RootState } from "../store";
 
 interface CommentState {
-  // Comments organized by entity for better performance
-  commentsByEntity: Record<string, Comment[]>; // key: "entityType:entityId"
+  commentsByEntity: Record<string, Comment[]>;
   chatRooms: ChatRoom[];
   loading: {
     fetchComments: boolean;
@@ -37,12 +38,11 @@ const initialState: CommentState = {
   pagination: {},
 };
 
-// Helper to create entity key
 const getEntityKey = (entityType: string, entityId: string) => `${entityType}:${entityId}`;
 
 // Async thunks
 export const fetchComments = createAsyncThunk(
-  "comment/fetchComments",
+  "comments/fetchComments",
   async (params: { 
     entityType: string; 
     entityId: string; 
@@ -61,17 +61,14 @@ export const fetchComments = createAsyncThunk(
         skip,
         limit 
       };
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        return rejectWithValue(err.message);
-      }
-      return rejectWithValue("Failed to fetch comments");
+    } catch (err) {
+      return rejectWithValue(err instanceof Error ? err.message : "Failed to fetch comments");
     }
   }
 );
 
 export const createComment = createAsyncThunk(
-  "comment/createComment",
+  "comments/createComment",
   async (params: { 
     entityType: string; 
     entityId: string; 
@@ -84,17 +81,14 @@ export const createComment = createAsyncThunk(
         entityId: params.entityId, 
         comment: response.data 
       };
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        return rejectWithValue(err.message);
-      }
-      return rejectWithValue("Failed to create comment");
+    } catch (err) {
+      return rejectWithValue(err instanceof Error ? err.message : "Failed to create comment");
     }
   }
 );
 
 export const updateComment = createAsyncThunk(
-  "comment/updateComment",
+  "comments/updateComment",
   async (params: { 
     entityType: string; 
     entityId: string; 
@@ -108,17 +102,14 @@ export const updateComment = createAsyncThunk(
         entityId: params.entityId, 
         comment: response.data 
       };
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        return rejectWithValue(err.message);
-      }
-      return rejectWithValue("Failed to update comment");
+    } catch (err) {
+      return rejectWithValue(err instanceof Error ? err.message : "Failed to update comment");
     }
   }
 );
 
 export const deleteComment = createAsyncThunk(
-  "comment/deleteComment",
+  "comments/deleteComment",
   async (params: { 
     entityType: string; 
     entityId: string; 
@@ -131,17 +122,14 @@ export const deleteComment = createAsyncThunk(
         entityId: params.entityId, 
         commentId: params.commentId 
       };
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        return rejectWithValue(err.message);
-      }
-      return rejectWithValue("Failed to delete comment");
+    } catch (err) {
+      return rejectWithValue(err instanceof Error ? err.message : "Failed to delete comment");
     }
   }
 );
 
 export const toggleCommentReaction = createAsyncThunk(
-  "comment/toggleReaction",
+  "comments/toggleReaction",
   async (params: { 
     entityType: string; 
     entityId: string; 
@@ -155,35 +143,28 @@ export const toggleCommentReaction = createAsyncThunk(
         entityId: params.entityId, 
         comment: response.data 
       };
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        return rejectWithValue(err.message);
-      }
-      return rejectWithValue("Failed to toggle reaction");
+    } catch (err) {
+      return rejectWithValue(err instanceof Error ? err.message : "Failed to toggle reaction");
     }
   }
 );
 
 export const fetchChatRooms = createAsyncThunk(
-  "comment/fetchChatRooms",
+  "comments/fetchChatRooms",
   async (_, { rejectWithValue }) => {
     try {
       const response = await CommentService.getChatRooms();
       return response.data;
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        return rejectWithValue(err.message);
-      }
-      return rejectWithValue("Failed to fetch chat rooms");
+    } catch (err) {
+      return rejectWithValue(err instanceof Error ? err.message : "Failed to fetch chat rooms");
     }
   }
 );
 
 const commentSlice = createSlice({
-  name: "comment",
+  name: "comments",
   initialState,
   reducers: {
-    // WebSocket handlers - called by WebSocket hooks
     addRealtimeComment: (state, action: PayloadAction<{ 
       entityType: string; 
       entityId: string; 
@@ -196,7 +177,6 @@ const commentSlice = createSlice({
         state.commentsByEntity[key] = [];
       }
       
-      // Check if comment already exists (prevent duplicates)
       const exists = state.commentsByEntity[key].find(c => c.id === comment.id);
       if (!exists) {
         state.commentsByEntity[key].push(comment);
@@ -254,16 +234,6 @@ const commentSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
-    
-    clearCommentsForEntity: (state, action: PayloadAction<{ 
-      entityType: string; 
-      entityId: string 
-    }>) => {
-      const { entityType, entityId } = action.payload;
-      const key = getEntityKey(entityType, entityId);
-      delete state.commentsByEntity[key];
-      delete state.pagination[key];
-    }
   },
   extraReducers: (builder) => {
     builder
@@ -278,17 +248,14 @@ const commentSlice = createSlice({
         const key = getEntityKey(entityType, entityId);
         
         if (skip === 0) {
-          // First load or refresh
           state.commentsByEntity[key] = comments;
         } else {
-          // Pagination - append to existing
           if (!state.commentsByEntity[key]) {
             state.commentsByEntity[key] = [];
           }
           state.commentsByEntity[key].push(...comments);
         }
         
-        // Update pagination info
         state.pagination[key] = {
           skip: skip + comments.length,
           limit: action.payload.limit,
@@ -306,10 +273,8 @@ const commentSlice = createSlice({
         state.loading.createComment = true;
         state.error = null;
       })
-      .addCase(createComment.fulfilled, (state, _action) => {
+      .addCase(createComment.fulfilled, (state) => {
         state.loading.createComment = false;
-        // Note: Real-time addition handled by WebSocket, not here
-        // This prevents duplicate additions
       })
       .addCase(createComment.rejected, (state, action) => {
         state.loading.createComment = false;
@@ -321,9 +286,8 @@ const commentSlice = createSlice({
         state.loading.updateComment = true;
         state.error = null;
       })
-      .addCase(updateComment.fulfilled, (state, _action) => {
+      .addCase(updateComment.fulfilled, (state) => {
         state.loading.updateComment = false;
-        // Real-time update handled by WebSocket
       })
       .addCase(updateComment.rejected, (state, action) => {
         state.loading.updateComment = false;
@@ -335,9 +299,8 @@ const commentSlice = createSlice({
         state.loading.deleteComment = true;
         state.error = null;
       })
-      .addCase(deleteComment.fulfilled, (state, _action) => {
+      .addCase(deleteComment.fulfilled, (state) => {
         state.loading.deleteComment = false;
-        // Real-time deletion handled by WebSocket
       })
       .addCase(deleteComment.rejected, (state, action) => {
         state.loading.deleteComment = false;
@@ -346,11 +309,10 @@ const commentSlice = createSlice({
       
       // Toggle Reaction
       .addCase(toggleCommentReaction.pending, (state) => {
-        // Optional: Add loading state for reactions if needed
         state.error = null;
       })
-      .addCase(toggleCommentReaction.fulfilled, (state, _action) => {
-        // Real-time reaction update handled by WebSocket
+      .addCase(toggleCommentReaction.fulfilled, () => {
+        // Handled by WebSocket
       })
       .addCase(toggleCommentReaction.rejected, (state, action) => {
         state.error = action.payload as string;
@@ -378,22 +340,21 @@ export const {
   removeRealtimeComment,
   updateRealtimeReaction,
   clearError,
-  clearCommentsForEntity
 } = commentSlice.actions;
 
 // Selectors
-export const selectCommentsByEntity = (state: { comment: CommentState }, entityType: string, entityId: string) => {
+export const selectCommentsByEntity = (state: RootState, entityType: string, entityId: string) => {
   const key = getEntityKey(entityType, entityId);
-  return state.comment.commentsByEntity[key] || [];
+  return state.comments.commentsByEntity[key] || [];
 };
 
-export const selectCommentPagination = (state: { comment: CommentState }, entityType: string, entityId: string) => {
+export const selectCommentPagination = (state: RootState, entityType: string, entityId: string) => {
   const key = getEntityKey(entityType, entityId);
-  return state.comment.pagination[key];
+  return state.comments.pagination[key];
 };
 
-export const selectChatRooms = (state: { comment: CommentState }) => state.comment.chatRooms;
-export const selectCommentLoading = (state: { comment: CommentState }) => state.comment.loading;
-export const selectCommentError = (state: { comment: CommentState }) => state.comment.error;
+export const selectChatRooms = (state: RootState) => state.comments.chatRooms;
+export const selectCommentLoading = (state: RootState) => state.comments.loading;
+export const selectCommentError = (state: RootState) => state.comments.error;
 
 export default commentSlice.reducer;
