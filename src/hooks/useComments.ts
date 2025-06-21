@@ -30,8 +30,24 @@ export function useComments(entityType: string, entityId: string) {
 
   const entityKey = `${entityType}:${entityId}`;
   
-  // Get comments state from Redux
-  const commentsState = useSelector((state: RootState) => state.comments);
+  // Get comments state from Redux with persist handling
+  const commentsState = useSelector((state: RootState) => {
+    // Handle redux-persist
+    const rootState = state as any;
+    return rootState.comments || {
+      commentsByEntity: {},
+      loading: {
+        fetchComments: false,
+        createComment: false,
+        updateComment: false,
+        deleteComment: false,
+        fetchChatRooms: false,
+      },
+      error: null,
+      pagination: {},
+      chatRooms: [],
+    };
+  });
   
   const comments = commentsState.commentsByEntity[entityKey] || [];
   const loading = commentsState.loading;
@@ -60,20 +76,62 @@ export function useComments(entityType: string, entityId: string) {
 
     const handleNewComment = (message: WSMessage) => {
       if (message.type === 'new_comment' && 'comment' in message) {
+        const comment = message.comment as Comment;
+        // Ensure all required fields are present
+        const normalizedComment: Comment = {
+          id: comment.id,
+          content: comment.content,
+          author_id: comment.author_id,
+          created_at: comment.created_at,
+          edited: comment.edited || false,
+          mentions: comment.mentions || [],
+          reactions: comment.reactions || {},
+          reaction_counts: comment.reaction_counts || {},
+          // Optional fields - only add if they exist
+          ...(comment.ticket_id && { ticket_id: comment.ticket_id }),
+          ...(comment.epic_id && { epic_id: comment.epic_id }),
+          ...(comment.sprint_id && { sprint_id: comment.sprint_id }),
+          ...(comment.project_id && { project_id: comment.project_id }),
+          ...(comment.parent_id && { parent_id: comment.parent_id }),
+          ...(comment.author && { author: comment.author }),
+          ...(comment.edited_at && { edited_at: comment.edited_at }),
+        };
+        
         dispatch(addRealtimeComment({
           entityType,
           entityId,
-          comment: message.comment as Comment,
+          comment: normalizedComment,
         }));
       }
     };
 
     const handleCommentUpdated = (message: WSMessage) => {
       if (message.type === 'comment_updated' && 'comment' in message) {
+        const comment = message.comment as Comment;
+        // Ensure all required fields are present
+        const normalizedComment: Comment = {
+          id: comment.id,
+          content: comment.content,
+          author_id: comment.author_id,
+          created_at: comment.created_at,
+          edited: comment.edited || false,
+          mentions: comment.mentions || [],
+          reactions: comment.reactions || {},
+          reaction_counts: comment.reaction_counts || {},
+          // Optional fields - only add if they exist
+          ...(comment.ticket_id && { ticket_id: comment.ticket_id }),
+          ...(comment.epic_id && { epic_id: comment.epic_id }),
+          ...(comment.sprint_id && { sprint_id: comment.sprint_id }),
+          ...(comment.project_id && { project_id: comment.project_id }),
+          ...(comment.parent_id && { parent_id: comment.parent_id }),
+          ...(comment.author && { author: comment.author }),
+          ...(comment.edited_at && { edited_at: comment.edited_at }),
+        };
+        
         dispatch(updateRealtimeComment({
           entityType,
           entityId,
-          comment: message.comment as Comment,
+          comment: normalizedComment,
         }));
       }
     };
@@ -108,9 +166,12 @@ export function useComments(entityType: string, entityId: string) {
         setTypingUsers(prev => {
           const filtered = prev.filter(u => u.id !== message.user_id);
           if (message.is_typing) {
+            const userInfo = message.user_info as any;
             return [...filtered, {
-              ...(message.user_info as TypingUser),
               id: message.user_id as string,
+              full_name: userInfo.full_name,
+              email: userInfo.email,
+              role: userInfo.role,
               timestamp: new Date().toISOString(),
             }];
           }
